@@ -57,7 +57,7 @@
                             id="email" 
                             class="form-control @error('email') is-invalid @enderror" 
                             placeholder="tu@email.com" 
-                            value="{{ old('email', 'uno@asescobpo.com') }}" 
+                            value="{{ old('email') }}" 
                             required 
                             autofocus
                         >
@@ -79,7 +79,6 @@
                             id="password" 
                             class="form-control has-right-icon @error('password') is-invalid @enderror" 
                             placeholder="••••••••" 
-                            value="password123"
                             required
                         >
                         <button type="button" class="input-icon-right" id="togglePasswordBtn" title="Mostrar/Ocultar contraseña">
