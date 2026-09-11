@@ -24,13 +24,5 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
-            ['email' => 'usuario@asescobpo.com'],
-            [
-                'name' => 'Ejecutivo Cobranzas',
-                'password' => 'password123',
-                'role' => 'user',
-            ]
-        );
     }
 }
