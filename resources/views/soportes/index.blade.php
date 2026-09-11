@@ -122,9 +122,9 @@
                 </p>
             </div>
 
-            <!-- Search and Filter Form -->
-            <form action="{{ route('soportes.index') }}" method="GET" class="search-filter-form">
-                <div class="search-input-group">
+            <!-- Dynamic Search and Filter Form -->
+            <form action="{{ route('soportes.index') }}" method="GET" class="search-filter-form" id="searchFilterForm" onsubmit="event.preventDefault(); triggerSearch();">
+                <div class="search-input-group" id="liveSearchGroup">
                     <span class="search-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -133,170 +133,53 @@
                     <input 
                         type="text" 
                         name="search" 
+                        id="liveSearchInput"
                         class="form-control" 
-                        placeholder="Buscar por cédula o celular..." 
+                        placeholder="Buscar por cédula o celular en tiempo real..." 
                         value="{{ request('search') }}"
+                        autocomplete="off"
                     >
+                    <button type="button" class="search-clear-btn" id="liveSearchClear" onclick="clearLiveSearch()" title="Limpiar búsqueda">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                            <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
+                        </svg>
+                    </button>
+                    <div class="search-spinner" id="searchSpinner"></div>
                 </div>
 
-                <select name="tipo" class="filter-select" onchange="this.form.submit()">
+                <!-- Filtro por Estado / Duplicados -->
+                <select name="estado" id="filterEstado" class="filter-select" onchange="triggerSearch()">
+                    <option value="">Todos los Estados</option>
+                    <option value="validos" {{ request('estado') === 'validos' ? 'selected' : '' }}>Solo Válidos (Sin Duplicados)</option>
+                    <option value="duplicados" {{ request('estado') === 'duplicados' ? 'selected' : '' }}>Solo Duplicados</option>
+                </select>
+
+                <!-- Filtro por Tipo de Archivo -->
+                <select name="tipo" id="filterTipo" class="filter-select" onchange="triggerSearch()">
                     <option value="">Todos los Formatos</option>
                     <option value="imagen" {{ request('tipo') === 'imagen' ? 'selected' : '' }}>Imágenes (JPG / PNG / WEBP)</option>
                     <option value="pdf" {{ request('tipo') === 'pdf' ? 'selected' : '' }}>Documentos PDF</option>
                 </select>
 
-                <select name="fecha_filtro" class="filter-select" onchange="this.form.submit()">
+                <!-- Filtro por Fecha -->
+                <select name="fecha_filtro" id="filterFecha" class="filter-select" onchange="triggerSearch()">
                     <option value="">Cualquier Fecha</option>
                     <option value="hoy" {{ request('fecha_filtro') === 'hoy' ? 'selected' : '' }}>Solo los de Hoy</option>
                     <option value="ayer" {{ request('fecha_filtro') === 'ayer' ? 'selected' : '' }}>Solo los de Ayer</option>
                 </select>
 
-                @if(request('search') || request('tipo') || request('fecha_filtro'))
-                    <a href="{{ route('soportes.index') }}" class="btn-secondary" style="padding: 8px 12px;" title="Limpiar filtros">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                        </svg>
-                    </a>
-                @endif
+                <button type="button" id="btnClearAllFilters" class="btn-secondary" style="padding: 8px 12px; display: {{ (request('search') || request('tipo') || request('estado') || request('fecha_filtro')) ? 'inline-flex' : 'none' }};" onclick="resetAllFilters()" title="Restablecer todos los filtros">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </form>
         </div>
 
-        <!-- Table -->
-        <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th style="width: 70px;">REF #</th>
-                        <th>CÉDULA</th>
-                        <th>CELULAR / WHATSAPP</th>
-                        <th>COMPROBANTE ADJUNTO</th>
-                        <th>FORMATO / PESO</th>
-                        <th>FECHA DE ENVÍO</th>
-                        <th style="text-align: right; width: 140px;">ACCIONES</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($soportes as $soporte)
-                        <tr>
-                            <td>
-                                <span style="font-weight: 800; color: var(--asesco-orange);">#{{ $soporte->id }}</span>
-                            </td>
-                            <td>
-                                <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ $soporte->cedula }}</strong>
-                            </td>
-                            <td>
-                                @if($soporte->celular)
-                                    <div style="display: flex; align-items: center; gap: 6px;">
-                                        <span>{{ $soporte->celular }}</span>
-                                        <a href="https://wa.me/57{{ preg_replace('/[^0-9]/', '', $soporte->celular) }}" target="_blank" style="color: #22c55e;" title="Escribir por WhatsApp">
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                @else
-                                    <span style="color: var(--text-light); font-style: italic;">No proporcionado</span>
-                                @endif
-                            </td>
-                            <td>
-                                <button type="button" 
-                                    class="btn-action-preview"
-                                    onclick="openSoporteModal(this)"
-                                    data-ref="#{{ $soporte->id }}"
-                                    data-cedula="{{ $soporte->cedula }}"
-                                    data-celular="{{ $soporte->celular ?? 'No proporcionado' }}"
-                                    data-walink="{{ $soporte->celular ? 'https://wa.me/57'.preg_replace('/[^0-9]/', '', $soporte->celular) : '' }}"
-                                    data-fecha="{{ $soporte->created_at ? $soporte->created_at->format('d/m/Y h:i A') : '-' }}"
-                                    data-formato="{{ strtoupper($soporte->archivo_extension) }} • {{ $soporte->archivo_tamano }}"
-                                    data-fileurl="{{ $soporte->file_url }}"
-                                    data-ispdf="{{ $soporte->isPdf() ? '1' : '0' }}"
-                                    data-downloadurl="{{ route('soportes.descargar', $soporte) }}"
-                                    data-downloadname="{{ $soporte->cedula }}-{{ $soporte->created_at ? $soporte->created_at->format('d-m-Y_h-ia') : 'soporte' }}.{{ $soporte->archivo_extension }}"
-                                    style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text-primary); font-weight: 600; background: none; border: none; cursor: pointer; padding: 0; text-align: left;"
-                                    title="Hacer clic para visualizar comprobante"
-                                >
-                                    @if($soporte->isPdf())
-                                        <div style="width: 36px; height: 36px; border-radius: 8px; background: #fee2e2; color: #ef4444; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.75rem; flex-shrink: 0;">
-                                            PDF
-                                        </div>
-                                    @else
-                                        <img src="{{ $soporte->file_url }}" alt="Comprobante" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid var(--border-color); flex-shrink: 0;">
-                                    @endif
-                                    <span style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                        {{ $soporte->archivo_nombre_original ?? 'Ver Archivo' }}
-                                    </span>
-                                </button>
-                            </td>
-                            <td>
-                                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">
-                                    {{ $soporte->archivo_extension }} &bull; {{ $soporte->archivo_tamano }}
-                                </span>
-                            </td>
-                            <td>
-                                {{ $soporte->created_at ? $soporte->created_at->format('d/m/Y h:i A') : '-' }}
-                            </td>
-                            <td>
-                                <div class="action-buttons-group" style="justify-content: flex-end;">
-                                    <!-- Botón de Descarga Directa: cedula-fechadeenvio.ext -->
-                                    <a href="{{ route('soportes.descargar', $soporte) }}" class="btn-action" style="color: var(--asesco-orange); border-color: rgba(240, 84, 35, 0.4);" title="Descargar como: {{ $soporte->cedula }}-{{ $soporte->created_at->format('d-m-Y_h-ia') }}.{{ $soporte->archivo_extension }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" width="16" height="16">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                                        </svg>
-                                    </a>
-
-                                    <!-- Botón Visualizar en Modal -->
-                                    <button type="button" 
-                                        class="btn-action" 
-                                        onclick="openSoporteModal(this)"
-                                        data-ref="#{{ $soporte->id }}"
-                                        data-cedula="{{ $soporte->cedula }}"
-                                        data-celular="{{ $soporte->celular ?? 'No proporcionado' }}"
-                                        data-walink="{{ $soporte->celular ? 'https://wa.me/57'.preg_replace('/[^0-9]/', '', $soporte->celular) : '' }}"
-                                        data-fecha="{{ $soporte->created_at ? $soporte->created_at->format('d/m/Y h:i A') : '-' }}"
-                                        data-formato="{{ strtoupper($soporte->archivo_extension) }} • {{ $soporte->archivo_tamano }}"
-                                        data-fileurl="{{ $soporte->file_url }}"
-                                        data-ispdf="{{ $soporte->isPdf() ? '1' : '0' }}"
-                                        data-downloadurl="{{ route('soportes.descargar', $soporte) }}"
-                                        data-downloadname="{{ $soporte->cedula }}-{{ $soporte->created_at ? $soporte->created_at->format('d-m-Y_h-ia') : 'soporte' }}.{{ $soporte->archivo_extension }}"
-                                        title="Abrir en modal"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" width="16" height="16">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                        </svg>
-                                    </button>
-
-                                    <!-- Eliminar con SweetAlert2 (Solo Admin) -->
-                                    @if(auth()->user()->isAdmin())
-                                        <form action="{{ route('soportes.destroy', $soporte) }}" method="POST" onsubmit="return confirmDelete(event, '¿Eliminar soporte de pago?', 'Se eliminará permanentemente el comprobante de la cédula {{ $soporte->cedula }}.')" style="display: inline;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn-action btn-delete" title="Eliminar registro">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" width="16" height="16">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ auth()->user()->isAdmin() ? 7 : 6 }}" style="text-align: center; padding: 40px; color: var(--text-muted);">
-                                No se encontraron soportes de pago con los filtros seleccionados.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <!-- Dynamic Table Container (Re-rendered via AJAX) -->
+        <div id="soportesTableContainer">
+            @include('soportes._table')
         </div>
-
-        @if($soportes->hasPages())
-            <div style="padding: 18px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                {{ $soportes->links() }}
-            </div>
-        @endif
     </div>
 
     <!-- ==========================================================================
@@ -373,10 +256,730 @@
             </div>
         </div>
     </div>
+
+    <!-- ==========================================================================
+         MODAL PARA MARCAR COMO DUPLICADO
+         ========================================================================== -->
+    <div class="modal-overlay" id="modalMarcarDuplicado" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-dialog">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="22" height="22" style="color: #ea580c;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                    </svg>
+                    <span>Vincular como Duplicado</span>
+                    <span id="modalMarcarTargetRef" style="background: #ffedd5; color: #ea580c; padding: 3px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;">#</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeMarcarModal()" title="Cerrar modal (Esc)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <!-- Info banner del comprobante a marcar -->
+                <div style="background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Comprobante seleccionado para marcar:</div>
+                        <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); margin-top: 2px;">
+                            Cédula: <span id="marcarTargetCedula" style="color: var(--asesco-orange);">-</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);" id="marcarTargetFecha">-</div>
+                    </div>
+                    <span style="font-size: 0.75rem; background: #fff7ed; color: #c2410c; padding: 4px 10px; border-radius: 12px; font-weight: 700; border: 1px solid #fdba74;">
+                        Será Duplicado
+                    </span>
+                </div>
+
+                <!-- Selección de original -->
+                <div style="margin-bottom: 16px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <label style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">
+                            1. Selecciona el Comprobante Original:
+                        </label>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);" id="candidateCountLabel">Cargando...</span>
+                    </div>
+
+                    <!-- Lista de candidatos (otros soportes de la misma cédula) -->
+                    <div class="candidate-cards-list" id="candidateCardsContainer">
+                        <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">
+                            Buscando comprobantes con la misma cédula...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- O ingresar ID manual si la cédula es diferente -->
+                <div style="border-top: 1px solid var(--border-color); padding-top: 14px; margin-bottom: 14px;">
+                    <label for="inputManualOriginalId" style="display: block; font-size: 0.825rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">
+                        O ingresar manualmente el Ref # del Original (si no aparece arriba):
+                    </label>
+                    <input 
+                        type="number" 
+                        id="inputManualOriginalId" 
+                        class="form-control" 
+                        placeholder="Ejemplo: 12" 
+                        oninput="onManualIdInput(this.value)"
+                        style="height: 38px; font-size: 0.875rem;"
+                    >
+                </div>
+
+                <!-- Motivo u observación opcional -->
+                <div>
+                    <label for="inputMotivoDuplicado" style="display: block; font-size: 0.825rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">
+                        Motivo u Observación (Opcional):
+                    </label>
+                    <input 
+                        type="text" 
+                        id="inputMotivoDuplicado" 
+                        class="form-control" 
+                        placeholder="Ej: Mismo comprobante de pago reenviado por el cliente"
+                        style="height: 38px; font-size: 0.875rem;"
+                    >
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeMarcarModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-primary" id="btnConfirmMarcarDuplicado" onclick="confirmMarcarDuplicado()" style="background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+                        <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd" />
+                    </svg>
+                    <span>Confirmar y Vincular Duplicado</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         MODAL DE COMPARACIÓN LADO A LADO (DIFF VIEWER)
+         ========================================================================== -->
+    <div class="modal-overlay" id="modalCompararDuplicados" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-xl">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="22" height="22" style="color: #7c3aed;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                    </svg>
+                    <span>Comparativa: Comprobante Original vs. Duplicado</span>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeCompareModal()" title="Cerrar modal (Esc)">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body" id="compareModalBody">
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);" id="compareLoadingState">
+                    <div class="search-spinner" style="display: inline-block; position: static; width: 28px; height: 28px; margin-bottom: 10px;"></div>
+                    <div>Cargando datos de comparación...</div>
+                </div>
+
+                <div class="comparison-grid" id="compareGridContainer" style="display: none;">
+                    <!-- Columna Izquierda: Original -->
+                    <div class="comparison-column col-original">
+                        <div class="comparison-col-header">
+                            <div class="comparison-col-title" style="color: #1e40af;">
+                                <span>⭐ COMPROBANTE ORIGINAL</span>
+                                <span id="compOrigRef" style="background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">#</span>
+                            </div>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 2px 8px; border-radius: 10px;">Pago Principal</span>
+                        </div>
+
+                        <div class="comparison-media-box">
+                            <img id="compOrigImg" src="" alt="Original" class="comparison-media-img" style="display: none;">
+                            <iframe id="compOrigIframe" src="" class="comparison-media-iframe" style="display: none;" title="PDF Original"></iframe>
+                        </div>
+
+                        <div class="comparison-meta-box">
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Cédula:</span>
+                                <span class="comparison-meta-val" id="compOrigCedula">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Celular:</span>
+                                <span class="comparison-meta-val" id="compOrigCelular">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Fecha de Envío:</span>
+                                <span class="comparison-meta-val" id="compOrigFecha">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Archivo:</span>
+                                <span class="comparison-meta-val" id="compOrigArchivo" style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</span>
+                            </div>
+                        </div>
+
+                        <a id="compOrigDownloadBtn" href="#" class="btn-secondary" style="width: 100%; justify-content: center; gap: 6px; padding: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Descargar Original
+                        </a>
+                    </div>
+
+                    <!-- Columna Derecha: Duplicado -->
+                    <div class="comparison-column col-duplicate">
+                        <div class="comparison-col-header">
+                            <div class="comparison-col-title" style="color: #c2410c;">
+                                <span>🔁 COMPROBANTE DUPLICADO</span>
+                                <span id="compDupRef" style="background: #ffedd5; color: #c2410c; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">#</span>
+                            </div>
+                            <span style="font-size: 0.75rem; font-weight: 700; color: #ea580c; background: #ffedd5; padding: 2px 8px; border-radius: 10px;">Duplicado</span>
+                        </div>
+
+                        <div class="comparison-media-box">
+                            <img id="compDupImg" src="" alt="Duplicado" class="comparison-media-img" style="display: none;">
+                            <iframe id="compDupIframe" src="" class="comparison-media-iframe" style="display: none;" title="PDF Duplicado"></iframe>
+                        </div>
+
+                        <div class="comparison-meta-box">
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Cédula:</span>
+                                <span class="comparison-meta-val" id="compDupCedula">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Celular:</span>
+                                <span class="comparison-meta-val" id="compDupCelular">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Fecha de Envío:</span>
+                                <span class="comparison-meta-val" id="compDupFecha">-</span>
+                            </div>
+                            <div class="comparison-meta-row">
+                                <span class="comparison-meta-label">Observación:</span>
+                                <span class="comparison-meta-val" id="compDupMotivo" style="color: #ea580c; font-style: italic;">-</span>
+                            </div>
+                        </div>
+
+                        <a id="compDupDownloadBtn" href="#" class="btn-secondary" style="width: 100%; justify-content: center; gap: 6px; padding: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" width="16" height="16">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Descargar Duplicado
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer" style="justify-content: space-between;">
+                <button type="button" class="btn-secondary" id="btnDesmarcarCompare" onclick="desmarcarFromCompareModal()" style="color: #dc2626; border-color: rgba(220, 38, 38, 0.3);">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" width="16" height="16">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                    <span>Desmarcar como Duplicado</span>
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeCompareModal()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
 <script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
+
+    // ==========================================================================
+    // DYNAMIC REAL-TIME LIVE SEARCH & FILTERS (DEBOUNCED FETCH)
+    // ==========================================================================
+    let searchDebounceTimer = null;
+    let currentCompareDuplicateId = null;
+    let currentMarcarTargetId = null;
+    let selectedOriginalCandidateId = null;
+
+    const liveSearchInput = document.getElementById('liveSearchInput');
+    const liveSearchClear = document.getElementById('liveSearchClear');
+    const liveSearchGroup = document.getElementById('liveSearchGroup');
+    const btnClearAllFilters = document.getElementById('btnClearAllFilters');
+
+    if (liveSearchInput) {
+        liveSearchInput.addEventListener('input', function() {
+            if (this.value.trim() !== '') {
+                liveSearchClear.style.display = 'inline-flex';
+            } else {
+                liveSearchClear.style.display = 'none';
+            }
+
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                triggerSearch();
+            }, 280);
+        });
+
+        // Trigger on enter key without reload
+        liveSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchDebounceTimer);
+                triggerSearch();
+            }
+        });
+    }
+
+    function clearLiveSearch() {
+        if (liveSearchInput) {
+            liveSearchInput.value = '';
+            liveSearchClear.style.display = 'none';
+            liveSearchInput.focus();
+            triggerSearch();
+        }
+    }
+
+    function resetAllFilters() {
+        if (liveSearchInput) liveSearchInput.value = '';
+        if (liveSearchClear) liveSearchClear.style.display = 'none';
+        document.getElementById('filterTipo').value = '';
+        document.getElementById('filterEstado').value = '';
+        document.getElementById('filterFecha').value = '';
+        triggerSearch();
+    }
+
+    function triggerSearch(customUrl = null) {
+        const search = liveSearchInput ? liveSearchInput.value.trim() : '';
+        const tipo = document.getElementById('filterTipo').value;
+        const estado = document.getElementById('filterEstado').value;
+        const fecha_filtro = document.getElementById('filterFecha').value;
+
+        // Update clear button visibility
+        if (btnClearAllFilters) {
+            if (search || tipo || estado || fecha_filtro) {
+                btnClearAllFilters.style.display = 'inline-flex';
+            } else {
+                btnClearAllFilters.style.display = 'none';
+            }
+        }
+
+        let targetUrl = customUrl;
+        if (!targetUrl) {
+            const params = new URLSearchParams();
+            if (search) params.set('search', search);
+            if (tipo) params.set('tipo', tipo);
+            if (estado) params.set('estado', estado);
+            if (fecha_filtro) params.set('fecha_filtro', fecha_filtro);
+            targetUrl = `{{ route('soportes.index') }}?${params.toString()}`;
+        }
+
+        if (liveSearchGroup) liveSearchGroup.classList.add('is-loading');
+
+        fetch(targetUrl, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Error al consultar datos');
+            return response.text();
+        })
+        .then(html => {
+            const container = document.getElementById('soportesTableContainer');
+            if (container) {
+                container.innerHTML = html;
+                bindPaginationEvents();
+            }
+            window.history.replaceState({}, '', targetUrl);
+        })
+        .catch(err => {
+            console.error('Error filtrando:', err);
+        })
+        .finally(() => {
+            if (liveSearchGroup) liveSearchGroup.classList.remove('is-loading');
+        });
+    }
+
+    // Intercept AJAX pagination clicks
+    function bindPaginationEvents() {
+        const container = document.getElementById('soportesTableContainer');
+        if (!container) return;
+
+        const links = container.querySelectorAll('.pagination a, #tablePaginationLinks a');
+        links.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const url = this.getAttribute('href');
+                if (url && url !== '#') {
+                    triggerSearch(url);
+                }
+            });
+        });
+    }
+
+    // Initialize pagination listener on load
+    document.addEventListener('DOMContentLoaded', () => {
+        bindPaginationEvents();
+        if (liveSearchInput && liveSearchInput.value.trim() !== '') {
+            liveSearchClear.style.display = 'inline-flex';
+        }
+    });
+
+    // ==========================================================================
+    // MODAL DE MARCAR COMO DUPLICADO
+    // ==========================================================================
+    function openMarcarModal(soporteId) {
+        currentMarcarTargetId = soporteId;
+        selectedOriginalCandidateId = null;
+
+        const modal = document.getElementById('modalMarcarDuplicado');
+        document.getElementById('modalMarcarTargetRef').innerText = '#' + soporteId;
+        document.getElementById('inputManualOriginalId').value = '';
+        document.getElementById('inputMotivoDuplicado').value = '';
+        document.getElementById('candidateCountLabel').innerText = 'Cargando...';
+
+        const container = document.getElementById('candidateCardsContainer');
+        container.innerHTML = `
+            <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.85rem;">
+                <div class="search-spinner" style="display: inline-block; position: static; width: 20px; height: 20px; margin-bottom: 6px;"></div>
+                <div>Buscando comprobantes para sugerir el original...</div>
+            </div>
+        `;
+
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+
+        // Fetch candidate matches
+        fetch(`{{ url('soportes') }}/${soporteId}/posibles-duplicados`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.actual) {
+                document.getElementById('marcarTargetCedula').innerText = data.actual.cedula;
+                document.getElementById('marcarTargetFecha').innerText = data.actual.fecha + ' (' + data.actual.extension + ')';
+            }
+
+            const candidates = data.posibles || [];
+            document.getElementById('candidateCountLabel').innerText = `${candidates.length} encontrados con esta cédula`;
+
+            if (candidates.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 16px; background: #fffbeb; border: 1px dashed #fde68a; border-radius: var(--radius-md); text-align: center; color: #b45309; font-size: 0.85rem;">
+                        No se encontraron otros comprobantes con la cédula <strong>${data.actual?.cedula || ''}</strong>.<br>
+                        Puedes ingresar el <strong>Ref #</strong> del original en la casilla inferior si fue digitado con otra cédula.
+                    </div>
+                `;
+            } else {
+                let html = '';
+                candidates.forEach((cand, idx) => {
+                    const isSelected = idx === 0 ? 'selected' : '';
+                    if (idx === 0) selectedOriginalCandidateId = cand.id;
+
+                    const thumb = cand.is_pdf
+                        ? `<div class="candidate-pdf-badge">PDF</div>`
+                        : `<img src="${cand.file_url}" alt="Preview" class="candidate-thumb">`;
+
+                    html += `
+                        <div class="candidate-card ${isSelected}" onclick="selectCandidateCard(this, ${cand.id})" id="candCard_${cand.id}">
+                            ${thumb}
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <strong style="color: var(--text-primary); font-size: 0.9rem;">Ref #${cand.id}</strong>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);">${cand.extension} • ${cand.tamano}</span>
+                                    ${cand.is_duplicado ? '<span style="font-size: 0.7rem; color: #ea580c; background: #fff7ed; padding: 1px 6px; border-radius: 6px;">Ya es duplicado</span>' : ''}
+                                </div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+                                    Enviado: <strong>${cand.fecha}</strong>
+                                </div>
+                            </div>
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--asesco-orange);">
+                                ${isSelected ? '✓ Seleccionado' : 'Seleccionar'}
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            container.innerHTML = `<div style="color: #dc2626; padding: 16px; text-align: center;">Error al cargar sugerencias.</div>`;
+        });
+    }
+
+    function selectCandidateCard(el, originalId) {
+        document.querySelectorAll('.candidate-card').forEach(c => {
+            c.classList.remove('selected');
+            const statusLabel = c.querySelector('div:last-child');
+            if (statusLabel) statusLabel.innerText = 'Seleccionar';
+        });
+
+        el.classList.add('selected');
+        const statusLabel = el.querySelector('div:last-child');
+        if (statusLabel) statusLabel.innerText = '✓ Seleccionado';
+
+        selectedOriginalCandidateId = originalId;
+        document.getElementById('inputManualOriginalId').value = '';
+    }
+
+    function onManualIdInput(val) {
+        if (val.trim() !== '') {
+            selectedOriginalCandidateId = parseInt(val.trim());
+            document.querySelectorAll('.candidate-card').forEach(c => {
+                c.classList.remove('selected');
+                const statusLabel = c.querySelector('div:last-child');
+                if (statusLabel) statusLabel.innerText = 'Seleccionar';
+            });
+        }
+    }
+
+    function confirmMarcarDuplicado() {
+        const originalId = selectedOriginalCandidateId || parseInt(document.getElementById('inputManualOriginalId').value);
+        const motivo = document.getElementById('inputMotivoDuplicado').value.trim();
+
+        if (!originalId || isNaN(originalId)) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Selecciona el comprobante original',
+                text: 'Por favor selecciona uno de los comprobantes sugeridos o ingresa el número de referencia manualmente.',
+                confirmButtonText: 'Entendido',
+                customClass: { popup: 'asesco-swal-popup', confirmButton: 'asesco-swal-confirm' },
+                buttonsStyling: false
+            });
+            return;
+        }
+
+        if (originalId === currentMarcarTargetId) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Referencia inválida',
+                text: 'Un comprobante no puede ser duplicado de sí mismo.',
+                confirmButtonText: 'Entendido',
+                customClass: { popup: 'asesco-swal-popup', confirmButton: 'asesco-swal-confirm' },
+                buttonsStyling: false
+            });
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmMarcarDuplicado');
+        btn.disabled = true;
+        btn.innerText = 'Guardando...';
+
+        fetch(`{{ url('soportes') }}/${currentMarcarTargetId}/marcar-duplicado`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                original_id: originalId,
+                motivo: motivo
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Confirmar y Vincular Duplicado</span>';
+
+            if (data.success) {
+                closeMarcarModal();
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Comprobante Vinculado!',
+                    text: data.message,
+                    timer: 2500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'asesco-swal-popup' }
+                });
+                triggerSearch();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'No se pudo registrar el duplicado.',
+                    confirmButtonText: 'Cerrar',
+                    customClass: { popup: 'asesco-swal-popup', confirmButton: 'asesco-swal-confirm' },
+                    buttonsStyling: false
+                });
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = '<span>Confirmar y Vincular Duplicado</span>';
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error de conexión',
+                text: 'Ocurrió un inconveniente al procesar la solicitud.',
+                confirmButtonText: 'Cerrar',
+                customClass: { popup: 'asesco-swal-popup', confirmButton: 'asesco-swal-confirm' },
+                buttonsStyling: false
+            });
+        });
+    }
+
+    function closeMarcarModal() {
+        const modal = document.getElementById('modalMarcarDuplicado');
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        currentMarcarTargetId = null;
+        selectedOriginalCandidateId = null;
+    }
+
+    // ==========================================================================
+    // MODAL DE COMPARACIÓN LADO A LADO
+    // ==========================================================================
+    function openCompareModal(soporteId) {
+        const modal = document.getElementById('modalCompararDuplicados');
+        const loading = document.getElementById('compareLoadingState');
+        const grid = document.getElementById('compareGridContainer');
+
+        loading.style.display = 'block';
+        grid.style.display = 'none';
+
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+
+        fetch(`{{ url('soportes') }}/${soporteId}/comparar-datos`, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Error al cargar datos');
+            return res.json();
+        })
+        .then(data => {
+            loading.style.display = 'none';
+            grid.style.display = 'grid';
+
+            const orig = data.original;
+            const dup = data.duplicado;
+            currentCompareDuplicateId = dup.id;
+
+            // Columna Original
+            document.getElementById('compOrigRef').innerText = '#' + orig.id;
+            document.getElementById('compOrigCedula').innerText = orig.cedula;
+            document.getElementById('compOrigCelular').innerText = orig.celular;
+            document.getElementById('compOrigFecha').innerText = orig.fecha;
+            document.getElementById('compOrigArchivo').innerText = orig.archivo_nombre;
+            document.getElementById('compOrigDownloadBtn').href = orig.download_url;
+
+            const origImg = document.getElementById('compOrigImg');
+            const origIframe = document.getElementById('compOrigIframe');
+            if (orig.is_pdf) {
+                origImg.style.display = 'none';
+                origIframe.style.display = 'block';
+                origIframe.src = orig.file_url;
+            } else {
+                origIframe.style.display = 'none';
+                origImg.style.display = 'block';
+                origImg.src = orig.file_url;
+            }
+
+            // Columna Duplicado
+            document.getElementById('compDupRef').innerText = '#' + dup.id;
+            document.getElementById('compDupCedula').innerText = dup.cedula;
+            document.getElementById('compDupCelular').innerText = dup.celular;
+            document.getElementById('compDupFecha').innerText = dup.fecha;
+            document.getElementById('compDupMotivo').innerText = dup.motivo || 'Marcado como duplicado';
+            document.getElementById('compDupDownloadBtn').href = dup.download_url;
+
+            const dupImg = document.getElementById('compDupImg');
+            const dupIframe = document.getElementById('compDupIframe');
+            if (dup.is_pdf) {
+                dupImg.style.display = 'none';
+                dupIframe.style.display = 'block';
+                dupIframe.src = dup.file_url;
+            } else {
+                dupIframe.style.display = 'none';
+                dupImg.style.display = 'block';
+                dupImg.src = dup.file_url;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            loading.innerHTML = `<div style="color: #dc2626;">Error al cargar la comparación de comprobantes.</div>`;
+        });
+    }
+
+    function closeCompareModal() {
+        const modal = document.getElementById('modalCompararDuplicados');
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+
+        setTimeout(() => {
+            document.getElementById('compOrigImg').src = '';
+            document.getElementById('compOrigIframe').src = '';
+            document.getElementById('compDupImg').src = '';
+            document.getElementById('compDupIframe').src = '';
+            currentCompareDuplicateId = null;
+        }, 200);
+    }
+
+    function desmarcarFromCompareModal() {
+        if (!currentCompareDuplicateId) return;
+        desmarcarDuplicado(currentCompareDuplicateId);
+    }
+
+    function desmarcarDuplicado(soporteId) {
+        Swal.fire({
+            title: '¿Desmarcar como duplicado?',
+            text: `El comprobante #${soporteId} volverá a ser un registro regular e independiente.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, desmarcar',
+            cancelButtonText: 'Cancelar',
+            customClass: {
+                popup: 'asesco-swal-popup',
+                confirmButton: 'asesco-swal-confirm',
+                cancelButton: 'asesco-swal-cancel'
+            },
+            buttonsStyling: false
+        }).then(result => {
+            if (result.isConfirmed) {
+                fetch(`{{ url('soportes') }}/${soporteId}/desmarcar-duplicado`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    closeCompareModal();
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Desmarcado',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false,
+                        customClass: { popup: 'asesco-swal-popup' }
+                    });
+                    triggerSearch();
+                })
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo desmarcar el comprobante.',
+                        customClass: { popup: 'asesco-swal-popup' }
+                    });
+                });
+            }
+        });
+    }
+
+    // ==========================================================================
+    // UTILITIES
+    // ==========================================================================
     function copyPublicLink() {
         const url = document.getElementById('publicUrlText').innerText.trim();
         navigator.clipboard.writeText(url).then(function() {
@@ -446,7 +1049,6 @@
         modal.classList.remove('active');
         modal.setAttribute('aria-hidden', 'true');
 
-        // Stop video or pdf iframe background activity
         setTimeout(() => {
             document.getElementById('modalPreviewImg').src = '';
             document.getElementById('modalPreviewIframe').src = '';

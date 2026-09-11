@@ -36,6 +36,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [SoportePagoController::class, 'index'])->name('index');
         Route::get('/descargar-lote', [SoportePagoController::class, 'downloadBatch'])->name('descargarLote');
         Route::get('/{soporte}/descargar', [SoportePagoController::class, 'download'])->name('descargar');
+        Route::post('/{soporte}/marcar-duplicado', [SoportePagoController::class, 'marcarDuplicado'])->name('marcarDuplicado');
+        Route::post('/{soporte}/desmarcar-duplicado', [SoportePagoController::class, 'desmarcarDuplicado'])->name('desmarcarDuplicado');
+        Route::get('/{soporte}/posibles-duplicados', [SoportePagoController::class, 'posiblesDuplicados'])->name('posiblesDuplicados');
+        Route::get('/{soporte}/comparar-datos', [SoportePagoController::class, 'compararDatos'])->name('compararDatos');
         Route::delete('/{soporte}', [SoportePagoController::class, 'destroy'])->name('destroy');
     });
 

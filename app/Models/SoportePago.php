@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'cedula',
@@ -16,12 +18,59 @@ use Illuminate\Database\Eloquent\Model;
     'tipo',
     'estado',
     'ip',
+    'duplicado_de_id',
+    'duplicado_motivo',
+    'duplicado_at',
 ])]
 class SoportePago extends Model
 {
     use HasFactory;
 
     protected $table = 'soportes_pagos';
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'duplicado_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Get the original payment support if this is a duplicate.
+     */
+    public function original(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'duplicado_de_id');
+    }
+
+    /**
+     * Get all duplicates linked to this original payment support.
+     */
+    public function duplicados(): HasMany
+    {
+        return $this->hasMany(self::class, 'duplicado_de_id');
+    }
+
+    /**
+     * Check if this payment support is marked as duplicate.
+     */
+    public function isDuplicado(): bool
+    {
+        return ! is_null($this->duplicado_de_id) || $this->estado === 'duplicado';
+    }
+
+    /**
+     * Check if other supports are marked as duplicates of this one.
+     */
+    public function hasDuplicados(): bool
+    {
+        return $this->duplicados()->exists();
+    }
 
     /**
      * Get full public URL for the file.
