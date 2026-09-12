@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
     --asesco-orange: #f05423;
@@ -13,7 +13,7 @@
     --asesco-gradient-btn: linear-gradient(135deg, #e8452e 0%, #db2777 100%);
     --asesco-gradient-btn-hover: linear-gradient(135deg, #d83b25 0%, #be185d 100%);
     
-    --sidebar-bg: #111722;
+    --sidebar-bg: #161e2d;
     --sidebar-card: #182030;
     --sidebar-active-bg: #222538;
     --sidebar-hover-bg: rgba(255, 255, 255, 0.05);
@@ -46,7 +46,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
@@ -305,13 +305,14 @@ body {
 }
 
 .sidebar-brand-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
+    height: 32px;
+    width: auto;
+    max-width: 52px;
+    object-fit: contain;
     background: transparent;
     padding: 0;
     border: none;
+    border-radius: 0;
     flex-shrink: 0;
 }
 
@@ -361,7 +362,7 @@ body {
     color: var(--sidebar-text);
     text-decoration: none;
     font-size: 0.925rem;
-    font-weight: 500;
+    font-weight: 400;
     border-radius: var(--radius-md);
     transition: all 0.15s ease;
     position: relative;
@@ -375,7 +376,7 @@ body {
 .nav-item.active {
     background-color: var(--sidebar-active-bg);
     color: var(--sidebar-text-active);
-    font-weight: 700;
+    font-weight: 400;
 }
 
 .nav-item.active::before {
@@ -403,6 +404,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 400;
 }
 
 .nav-chevron {
@@ -511,9 +513,9 @@ body {
 }
 
 .page-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
 }
 
 .role-badge {
@@ -1017,7 +1019,7 @@ body {
 }
 
 .card-header {
-    padding: 20px 24px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     display: flex;
     align-items: center;
@@ -1027,13 +1029,13 @@ body {
 }
 
 .card-title {
-    font-size: 1.1rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #374151;
 }
 
 .card-body {
-    padding: 24px;
+    padding: 20px;
 }
 
 .table-responsive {
@@ -1048,21 +1050,21 @@ body {
 }
 
 .table-custom th {
-    background-color: #f8fafc;
-    padding: 14px 20px;
-    font-size: 0.775rem;
+    background-color: #f9fafb;
+    padding: 10px 14px;
+    font-size: 0.6875rem;
     font-weight: 700;
-    color: var(--text-muted);
+    color: #4b5563;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 0.05em;
     border-bottom: 1px solid var(--border-color);
 }
 
 .table-custom td {
-    padding: 16px 20px;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    border-bottom: 1px solid #f1f5f9;
+    padding: 10px 14px;
+    font-size: 0.8125rem;
+    color: #374151;
+    border-bottom: 1px solid #f3f4f6;
     vertical-align: middle;
 }
 
@@ -1555,7 +1557,7 @@ div:where(.swal2-container) {
 div:where(.swal2-popup).asesco-swal-popup {
     border-radius: var(--radius-xl) !important;
     padding: 24px 28px !important;
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif !important;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
     border: 1.5px solid var(--border-color) !important;
 }

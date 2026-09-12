@@ -418,12 +418,12 @@
                         titleColor: '#ffffff',
                         bodyColor: '#f05423',
                         titleFont: {
-                            family: "'Plus Jakarta Sans', sans-serif",
+                            family: "'Inter', sans-serif",
                             size: 12,
                             weight: '700'
                         },
                         bodyFont: {
-                            family: "'Plus Jakarta Sans', sans-serif",
+                            family: "'Inter', sans-serif",
                             size: 13,
                             weight: '800'
                         },
@@ -446,7 +446,7 @@
                         ticks: {
                             color: '#94a3b8',
                             font: {
-                                family: "'Plus Jakarta Sans', sans-serif",
+                                family: "'Inter', sans-serif",
                                 size: 11,
                                 weight: '600'
                             }
@@ -462,7 +462,7 @@
                             stepSize: 1,
                             color: '#94a3b8',
                             font: {
-                                family: "'Plus Jakarta Sans', sans-serif",
+                                family: "'Inter', sans-serif",
                                 size: 11
                             },
                             precision: 0

@@ -10,8 +10,11 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/logo_asesco.png') }}">
     
-    <!-- Google Fonts & Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <!-- Google Fonts Inter & Custom CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     @stack('styles')
 </head>
 <body>

@@ -16,11 +16,11 @@
             @forelse($soportes as $soporte)
                 <tr class="{{ $soporte->isDuplicado() ? 'row-duplicate' : '' }}">
                     <td>
-                        <span style="font-weight: 800; color: var(--asesco-orange);">#{{ $soporte->id }}</span>
+                        <span style="font-weight: 600; font-size: 0.8125rem; color: var(--asesco-orange);">#{{ $soporte->id }}</span>
                     </td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-                            <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ $soporte->cedula }}</strong>
+                            <span style="color: #111827; font-weight: 500; font-size: 0.8125rem;">{{ $soporte->cedula }}</span>
                             @if(isset($cedulasRepetidas[$soporte->cedula]))
                                 <span class="badge-multi-envio" title="Esta cédula ha enviado múltiples soportes">
                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" width="11" height="11">

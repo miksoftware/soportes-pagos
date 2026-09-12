@@ -16,7 +16,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div style="font-weight: 800; color: var(--text-primary); font-size: 0.95rem;">
+                    <div style="font-weight: 600; color: #1f2937; font-size: 0.875rem;">
                         Enlace Público para Clientes:
                         <strong style="color: var(--asesco-orange);" id="publicUrlText">{{ route('soporte.create') }}</strong>
                     </div>
@@ -48,7 +48,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div style="font-weight: 800; font-size: 0.95rem; color: var(--text-primary);">
+                    <div style="font-weight: 600; font-size: 0.875rem; color: #1f2937;">
                         Descargas Masivas por Rango de Fechas (ZIP)
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-muted);">
