@@ -40,11 +40,9 @@ class SoportePagoController extends Controller
         // Filter by status / duplicates
         if ($estado = $request->input('estado')) {
             if ($estado === 'validos') {
-                $query->whereNull('duplicado_de_id')->where('estado', '!=', 'duplicado');
+                $query->validos();
             } elseif ($estado === 'duplicados') {
-                $query->where(function ($q) {
-                    $q->whereNotNull('duplicado_de_id')->orWhere('estado', 'duplicado');
-                });
+                $query->soloDuplicados();
             }
         }
 
@@ -256,7 +254,7 @@ class SoportePagoController extends Controller
     public function downloadBatch(Request $request): BinaryFileResponse|RedirectResponse
     {
         $rango = $request->input('rango'); // 'hoy', 'ayer', 'personalizado'
-        $query = SoportePago::query();
+        $query = SoportePago::query()->validos();
         $zipName = 'soportes_pagos_'.date('Y-m-d_His').'.zip';
 
         if ($rango === 'hoy') {

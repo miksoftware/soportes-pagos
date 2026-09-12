@@ -57,6 +57,28 @@ class SoportePago extends Model
     }
 
     /**
+     * Scope a query to only include valid (non-duplicate) payment supports.
+     */
+    public function scopeValidos($query)
+    {
+        return $query->whereNull('duplicado_de_id')
+            ->where(function ($q) {
+                $q->whereNull('estado')->orWhere('estado', '!=', 'duplicado');
+            });
+    }
+
+    /**
+     * Scope a query to only include duplicate payment supports.
+     */
+    public function scopeSoloDuplicados($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNotNull('duplicado_de_id')
+                ->orWhere('estado', 'duplicado');
+        });
+    }
+
+    /**
      * Check if this payment support is marked as duplicate.
      */
     public function isDuplicado(): bool

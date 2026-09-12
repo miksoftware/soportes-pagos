@@ -52,7 +52,7 @@
                         Descargas Masivas por Rango de Fechas (ZIP)
                     </div>
                     <div style="font-size: 0.8rem; color: var(--text-muted);">
-                        Descarga los comprobantes comprimidos, cada uno nombrado como: <code style="color: var(--asesco-orange); font-weight: 700;">cedula-fechadeenvio.ext</code>
+                        Descarga los comprobantes válidos comprimidos (se excluyen automáticamente los duplicados), cada uno nombrado como: <code style="color: var(--asesco-orange); font-weight: 600;">cedula-fechadeenvio.ext</code>
                     </div>
                 </div>
             </div>
